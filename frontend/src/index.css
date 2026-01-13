@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1a1a1a;
+  background-color: #f8fafc;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Chat bubble animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Loading dots animation */
+@keyframes bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+.loading-dot {
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.gradient-earth {
+  background: linear-gradient(135deg, #a18072 0%, #846358 100%);
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Risk level colors */
+.risk-low {
+  @apply bg-green-100 text-green-800 border-green-200;
+}
+
+.risk-medium {
+  @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+}
+
+.risk-high {
+  @apply bg-orange-100 text-orange-800 border-orange-200;
+}
+
+.risk-critical {
+  @apply bg-red-100 text-red-800 border-red-200;
+}
