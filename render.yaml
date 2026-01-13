@@ -1,0 +1,35 @@
+services:
+  # Backend API
+  - type: web
+    name: agriguard-api
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: AI_PROVIDER
+        value: groq
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # Frontend (Static Site)
+  - type: web
+    name: agriguard-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: agriguard-api
+          type: web
+          property: host
