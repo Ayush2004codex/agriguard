@@ -10,6 +10,15 @@ AgriGuard is an intelligent agricultural system that leverages multimodal AI to 
 4. **Conversational AI** - Talk to your AI agronomist in natural language
 5. **Predictive Analytics** - Forecast disease outbreaks using weather data
 
+## Quick Visuals: 
+
+<img width="1914" height="928" alt="Screenshot 2026-01-14 004524" src="https://github.com/user-attachments/assets/fe60a518-9df2-4062-9d19-f74693e19dbc" />
+
+<img width="1904" height="926" alt="Screenshot 2026-01-14 004639" src="https://github.com/user-attachments/assets/a0dc91dc-89ec-42b6-9041-0cda0ded7c46" />
+
+
+Product Link: https://agriguard-sigma.vercel.app/
+
 ## Tech Stack
 - **Backend**: Python FastAPI
 - **Frontend**: React + TypeScript
@@ -41,7 +50,7 @@ agriguard/
 ```
 
 ## Quick Start
-See individual README files in backend/ and frontend/ folders.
+See individual README files in backend/ and frontend/ folders.  
 
 ## Setup Instructions
 1. Clone the repository
@@ -50,6 +59,12 @@ See individual README files in backend/ and frontend/ folders.
 4. Run backend: `python -m uvicorn app.main:app --reload`
 5. Run frontend: `npm start`
 6. Visit http://localhost:3000
+
+## Installation step by step
+git clone https://github.com/Ayush2004codex/agriguard.git  
+cd agriguard  
+pip install -r requirements.txt  
+uvicorn main:app --reload  
 
 ## License
 MIT
