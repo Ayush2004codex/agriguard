@@ -165,7 +165,7 @@ class GroqProvider(AIProvider):
         self.api_key = api_key or os.getenv("GROQ_API_KEY", "")
         self.base_url = "https://api.groq.com/openai/v1"
         self.model = "llama-3.3-70b-versatile"  # Latest model (Jan 2026)
-        self.vision_model = "llama-3.2-11b-vision-preview"  # Updated vision model
+        self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct"  # Current vision model
     
     async def analyze_image(self, image_base64: str, prompt: str) -> str:
         """
