@@ -494,8 +494,8 @@ def get_ai_provider(provider_name: str = None) -> AIProvider:
 class SmartAIProvider(AIProvider):
     """
     Intelligent provider that auto-selects based on availability
-    Uses: Gemini for VISION (reliable), Groq for TEXT (fast)
-    Falls back: Ollama (local)
+    Uses: Groq for EVERYTHING (vision + text) - fast & free
+    Falls back: Gemini → Ollama (local)
     """
     
     def __init__(self):
@@ -505,24 +505,14 @@ class SmartAIProvider(AIProvider):
         self.current_provider = None
     
     async def _get_available_provider(self, need_vision: bool = False) -> AIProvider:
-        """Get the best provider - Gemini for vision, Groq for text"""
+        """Get the best provider - Groq for everything"""
         
-        # For VISION/IMAGE analysis - use Gemini (most reliable for vision)
-        if need_vision:
-            if self.gemini and self.gemini.api_key:
-                self.current_provider = "gemini"
-                return self.gemini
-            # Fallback to Ollama LLaVA
-            if await self.ollama.check_connection():
-                self.current_provider = "ollama"
-                return self.ollama
-        
-        # For TEXT generation - use Groq (fastest)
+        # Try Groq first for everything (including vision)
         if self.groq and self.groq.api_key:
             self.current_provider = "groq"
             return self.groq
         
-        # Fallback to Gemini for text
+        # Fallback to Gemini
         if self.gemini and self.gemini.api_key:
             self.current_provider = "gemini"
             return self.gemini
@@ -532,12 +522,12 @@ class SmartAIProvider(AIProvider):
             self.current_provider = "ollama"
             return self.ollama
         
-        # Return Gemini if nothing else works
-        self.current_provider = "gemini"
-        return self.gemini
+        # Return Groq if nothing else works
+        self.current_provider = "groq"
+        return self.groq
     
     async def analyze_image(self, image_base64: str, prompt: str) -> str:
-        """Use Gemini for image analysis (best vision quality)"""
+        """Use Groq vision model"""
         provider = await self._get_available_provider(need_vision=True)
         return await provider.analyze_image(image_base64, prompt)
     
