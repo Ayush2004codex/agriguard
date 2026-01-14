@@ -354,6 +354,121 @@ class GeminiProvider(AIProvider):
             return f"Error: {str(e)}"
 
 
+class HuggingFaceProvider(AIProvider):
+    """
+    Hugging Face Inference API - Completely FREE!
+    No API key needed, rate limited but generous
+    Models: LLaVA, BLIP-2, Salesforce BLIP
+    """
+    
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or os.getenv("HUGGINGFACE_API_KEY", "")
+        self.vision_model = "llava-hf/llava-1.5-7b-hf"  # Free LLaVA model
+        self.base_url = "https://api-inference.huggingface.co/models"
+    
+    async def analyze_image(self, image_base64: str, prompt: str) -> str:
+        """Analyze image using Hugging Face LLaVA"""
+        import base64
+        
+        # Convert base64 to bytes
+        image_bytes = base64.b64decode(image_base64)
+        
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        
+        # HuggingFace expects multipart form data
+        url = f"{self.base_url}/{self.vision_model}"
+        
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 500
+            }
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                # First request - send image and prompt
+                form = aiohttp.FormData()
+                form.add_field('file', image_bytes, filename='image.jpg', content_type='image/jpeg')
+                form.add_field('data', json.dumps(payload))
+                
+                async with session.post(
+                    url,
+                    headers=headers,
+                    data=form,
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            return data[0].get("generated_text", "Unable to analyze")
+                        return str(data)
+                    elif resp.status == 503:
+                        return "Model is loading, please try again in a moment"
+                    else:
+                        error = await resp.text()
+                        return f"HuggingFace Error: {error}"
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    async def generate_text(self, prompt: str, system_prompt: str = "") -> str:
+        """Generate text using HuggingFace"""
+        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        
+        # Use a text generation model
+        text_model = "mistralai/Mistral-7B-Instruct-v0.2"
+        url = f"{self.base_url}/{text_model}"
+        
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        
+        payload = {
+            "inputs": full_prompt,
+            "parameters": {
+                "max_new_tokens": 500,
+                "temperature": 0.7
+            }
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=30)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            return data[0].get("generated_text", "")
+                        return str(data)
+                    else:
+                        error = await resp.text()
+                        return f"Error: {error}"
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    async def chat(self, messages: list, system_prompt: str = "") -> str:
+        """Chat using HuggingFace"""
+        # Convert messages to single prompt
+        full_prompt = ""
+        if system_prompt:
+            full_prompt = f"System: {system_prompt}\n\n"
+        
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            full_prompt += f"{role.title()}: {content}\n"
+        
+        full_prompt += "Assistant: "
+        
+        return await self.generate_text(full_prompt)
+
+
 # ==================== Factory Function ====================
 
 def get_ai_provider(provider_name: str = None) -> AIProvider:
@@ -379,44 +494,56 @@ def get_ai_provider(provider_name: str = None) -> AIProvider:
 class SmartAIProvider(AIProvider):
     """
     Intelligent provider that auto-selects based on availability
-    Falls back: Groq (fast) -> Gemini (paid) -> Ollama (slow local)
+    Uses: Hugging Face for VISION (free), Groq for TEXT (fast)
+    Falls back: Gemini → Ollama (local)
     """
     
     def __init__(self):
         self.ollama = OllamaProvider()
         self.groq = GroqProvider() if os.getenv("GROQ_API_KEY") else None
         self.gemini = GeminiProvider() if os.getenv("GOOGLE_API_KEY") else None
+        self.huggingface = HuggingFaceProvider()  # Always available (no key needed)
         self.current_provider = None
     
     async def _get_available_provider(self, need_vision: bool = False) -> AIProvider:
-        """Get the first available provider - prioritize Groq (fast)"""
-        # Try Groq first (free cloud, FAST - 500 tokens/sec)
+        """Get the best provider - HuggingFace for vision, Groq for text"""
+        
+        # For VISION/IMAGE analysis - use Hugging Face (free, no key)
+        if need_vision:
+            # Try HuggingFace first (free)
+            self.current_provider = "huggingface"
+            return self.huggingface
+        
+        # For TEXT generation - use Groq (fastest)
         if self.groq and self.groq.api_key:
             self.current_provider = "groq"
             return self.groq
         
-        # Try Gemini second (paid tier, best quality)
+        # Fallback to Gemini for text
         if self.gemini and self.gemini.api_key:
             self.current_provider = "gemini"
             return self.gemini
         
-        # Fallback to Ollama (local, slower without GPU)
+        # Last resort - Ollama (local)
         if await self.ollama.check_connection():
             self.current_provider = "ollama"
             return self.ollama
         
-        # Last resort - return Groq even if issues (will error gracefully)
-        self.current_provider = "groq"
-        return self.groq if self.groq else self.ollama
+        # Return HuggingFace if nothing else works
+        self.current_provider = "huggingface"
+        return self.huggingface
     
     async def analyze_image(self, image_base64: str, prompt: str) -> str:
+        """Use HuggingFace for image analysis (free, no API key)"""
         provider = await self._get_available_provider(need_vision=True)
         return await provider.analyze_image(image_base64, prompt)
     
     async def generate_text(self, prompt: str, system_prompt: str = "") -> str:
-        provider = await self._get_available_provider()
+        """Use Groq for text (fastest)"""
+        provider = await self._get_available_provider(need_vision=False)
         return await provider.generate_text(prompt, system_prompt)
     
     async def chat(self, messages: list, system_prompt: str = "") -> str:
-        provider = await self._get_available_provider()
+        """Use Groq for chat (fastest)"""
+        provider = await self._get_available_provider(need_vision=False)
         return await provider.chat(messages, system_prompt)
