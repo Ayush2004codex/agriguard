@@ -494,25 +494,28 @@ def get_ai_provider(provider_name: str = None) -> AIProvider:
 class SmartAIProvider(AIProvider):
     """
     Intelligent provider that auto-selects based on availability
-    Uses: Hugging Face for VISION (free), Groq for TEXT (fast)
-    Falls back: Gemini → Ollama (local)
+    Uses: Gemini for VISION (reliable), Groq for TEXT (fast)
+    Falls back: Ollama (local)
     """
     
     def __init__(self):
         self.ollama = OllamaProvider()
         self.groq = GroqProvider() if os.getenv("GROQ_API_KEY") else None
         self.gemini = GeminiProvider() if os.getenv("GOOGLE_API_KEY") else None
-        self.huggingface = HuggingFaceProvider()  # Always available (no key needed)
         self.current_provider = None
     
     async def _get_available_provider(self, need_vision: bool = False) -> AIProvider:
-        """Get the best provider - HuggingFace for vision, Groq for text"""
+        """Get the best provider - Gemini for vision, Groq for text"""
         
-        # For VISION/IMAGE analysis - use Hugging Face (free, no key)
+        # For VISION/IMAGE analysis - use Gemini (most reliable for vision)
         if need_vision:
-            # Try HuggingFace first (free)
-            self.current_provider = "huggingface"
-            return self.huggingface
+            if self.gemini and self.gemini.api_key:
+                self.current_provider = "gemini"
+                return self.gemini
+            # Fallback to Ollama LLaVA
+            if await self.ollama.check_connection():
+                self.current_provider = "ollama"
+                return self.ollama
         
         # For TEXT generation - use Groq (fastest)
         if self.groq and self.groq.api_key:
@@ -529,12 +532,12 @@ class SmartAIProvider(AIProvider):
             self.current_provider = "ollama"
             return self.ollama
         
-        # Return HuggingFace if nothing else works
-        self.current_provider = "huggingface"
-        return self.huggingface
+        # Return Gemini if nothing else works
+        self.current_provider = "gemini"
+        return self.gemini
     
     async def analyze_image(self, image_base64: str, prompt: str) -> str:
-        """Use HuggingFace for image analysis (free, no API key)"""
+        """Use Gemini for image analysis (best vision quality)"""
         provider = await self._get_available_provider(need_vision=True)
         return await provider.analyze_image(image_base64, prompt)
     
@@ -547,3 +550,4 @@ class SmartAIProvider(AIProvider):
         """Use Groq for chat (fastest)"""
         provider = await self._get_available_provider(need_vision=False)
         return await provider.chat(messages, system_prompt)
+
