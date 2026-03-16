@@ -39,17 +39,4 @@ agriguard/
 │   └── .env
 └── docs/                 # Documentation
 ```
-
-## Quick Start
-See individual README files in backend/ and frontend/ folders.
-
-## Setup Instructions
-1. Clone the repository
-2. Install dependencies (see setup guide)
-3. Configure .env files
-4. Run backend: `python -m uvicorn app.main:app --reload`
-5. Run frontend: `npm start`
-6. Visit http://localhost:3000
-
-## License
-MIT
+Visit:- https://agriguard-one.vercel.app/
